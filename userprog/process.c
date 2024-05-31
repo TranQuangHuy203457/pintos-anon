@@ -28,9 +28,9 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name) 
 {
-  process_cleanup();
+//  process_cleanup();
     #ifdef VM
-    supplemental_page_table_init(&thread_current()->spt);
+//    supplemental_page_table_init(&thread_current()->spt);
     #endif
   char *fn_copy;
   tid_t tid;

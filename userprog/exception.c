@@ -5,6 +5,7 @@
 #include "userprog/pagedir.h"
 #include "userprog/syscall.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "threads/interrupt.h"
 #include "threads/thread.h"
@@ -19,8 +20,9 @@
 #include "filesys/file.h"
 
 
-void exit(int status);
-
+void exit_process(int status){
+    thread_exit();
+}
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -171,7 +173,10 @@ page_fault (struct intr_frame *f) {
   
 	
     if (!not_present || fault_addr == NULL || !is_user_vaddr(fault_addr)) {
-        exit(-1);  /* Invalid access or kernel address. */
+        exit_process(-1);  /* Invalid access or kernel address. */
+    }
+    if(vm_try_handle_fault(spt,fault_addr,write)){
+    return;
     }
      
 

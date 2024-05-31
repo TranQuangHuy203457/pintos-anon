@@ -136,7 +136,7 @@ static bool fetch_page_data(struct page *p, void *frame) {
 }
 
 /* Handles page faults by fetching the required page into memory. */
-static bool vm_try_handle_fault(struct supplemental_page_table *spt, void *fault_addr, bool write) {
+bool vm_try_handle_fault(struct supplemental_page_table *spt, void *fault_addr, bool write) {
     /* Locate the page that faulted in the supplemental page table. */
     struct page *p = spt_find_page(spt, fault_addr);
     if (p == NULL) {
