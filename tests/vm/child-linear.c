@@ -7,7 +7,7 @@
 #include "tests/lib.h"
 #include "tests/main.h"
 
-const char *test_name = "child-linear";
+//const char *test_name = "child-linear";
 
 #define SIZE (1024 * 1024)
 static char buf[SIZE];

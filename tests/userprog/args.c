@@ -3,7 +3,9 @@
    done differently for each of the args-* tests based on the
    output. */
 
-#include "tests/lib.h"
+#include "tests/lib.h" 
+
+//const char *test_name = "args";
 
 int
 main (int argc, char *argv[]) 

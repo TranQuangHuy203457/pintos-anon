@@ -20,9 +20,7 @@
 #include "filesys/file.h"
 
 
-void exit_process(int status){
-    thread_exit();
-}
+void process_exit(int status);
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -148,7 +146,7 @@ page_fault (struct intr_frame *f) {
     /* Fault address. */
   // Get the supplemental page table of the current thread
   struct thread *cur = thread_current();
-  struct supplemental_page_table *spt = &cur->spt; 
+  struct supplemental_page_table *spt = cur->spt; 
   
   /* Obtain faulting address, the virtual address that was
      accessed to cause the fault.  It may point to code or to
@@ -173,7 +171,7 @@ page_fault (struct intr_frame *f) {
   
 	
     if (!not_present || fault_addr == NULL || !is_user_vaddr(fault_addr)) {
-        exit_process(-1);  /* Invalid access or kernel address. */
+        process_exit(-1);  /* Invalid access or kernel address. */
     }
     if(vm_try_handle_fault(spt,fault_addr,write)){
     return;

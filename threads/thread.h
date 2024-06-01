@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "synch.h"
 
-struct supplemental_page_table *spt;
+extern struct supplemental_page_table *spt;
 /* States in a thread's life cycle. */
 enum thread_status
   {

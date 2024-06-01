@@ -79,7 +79,7 @@ print_stacktrace(struct thread *t, void *aux UNUSED)
 
   if (t == thread_current()) 
     {
-      frame = __builtin_frame_address (1);
+      frame = __builtin_frame_address (0);
       retaddr = __builtin_return_address (0);
     }
   else

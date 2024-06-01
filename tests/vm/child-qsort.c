@@ -9,7 +9,7 @@
 #include "tests/main.h"
 #include "tests/vm/qsort.h"
 
-const char *test_name = "child-qsort";
+//const char *test_name = "child-qsort";
 
 int
 main (int argc UNUSED, char *argv[]) 
