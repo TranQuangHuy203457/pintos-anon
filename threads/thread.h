@@ -8,6 +8,11 @@
 
 extern struct supplemental_page_table *spt;
 /* States in a thread's life cycle. */
+
+struct signal{
+	int signum;
+	void (*sig_handler)(void);
+};
 enum thread_status
   {
     THREAD_RUNNING,     /* Running thread. */
@@ -28,6 +33,13 @@ typedef int tid_t;
 
 /* A kernel thread or user process.
    ... */
+struct child_status {
+    tid_t child_id;                     /* Child thread id. */
+    int child_exit_status;              /* Child exit status. */
+    bool is_exit_called;                /* Has exit() been called? */
+    struct list_elem elem;              /* List element for child_status list. */
+};   
+   
 
 struct thread
   {
@@ -41,6 +53,7 @@ struct thread
     struct supplemental_page_table *spt;
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+    
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */

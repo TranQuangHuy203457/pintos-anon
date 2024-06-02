@@ -20,7 +20,6 @@
 #include "filesys/file.h"
 
 
-void process_exit(int status);
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -171,7 +170,7 @@ page_fault (struct intr_frame *f) {
   
 	
     if (!not_present || fault_addr == NULL || !is_user_vaddr(fault_addr)) {
-        process_exit(-1);  /* Invalid access or kernel address. */
+        exit(-1);  /* Invalid access or kernel address. */
     }
     if(vm_try_handle_fault(spt,fault_addr,write)){
     return;
@@ -185,6 +184,7 @@ page_fault (struct intr_frame *f) {
          user ? "user" : "kernel");
   kill(f);
 }
+
 
 
 
