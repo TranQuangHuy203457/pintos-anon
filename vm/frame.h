@@ -1,24 +1,19 @@
-#ifndef VM_FRAME_H
-#define VM_FRAME_H
+#ifndef FRAME_H
+#define FRAME_H
 
-#include <stdbool.h>
+
+#include <inttypes.h>
 #include <hash.h>
-#include "threads/palloc.h"
-#include "threads/thread.h"
+#include "devices/shutdown.h"
 
-/* Frame structure to represent a physical frame. */
-struct frame {
-    void *kva;             /* Kernel virtual address of the frame. */
-    bool in_use;           /* Flag to indicate if the frame is in use. */
-    // Add any other necessary fields
+void frame_table_init (void);
+void* frame_allocate(bool fill);
+
+struct frame
+{
+  void *page;                   // Pointer to frame owner
+  void *kaddr;                  // Kernel virtual address
+  struct hash_elem hash_elem;   // Frame Hash Table
 };
 
-/* Function prototypes */
-void frame_init(void);
-
-void *allocate_frame(void);
-
-void free_frame(void *frame);
-
-#endif /* VM_FRAME_H */
-
+#endif

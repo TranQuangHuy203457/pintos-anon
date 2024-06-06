@@ -1,18 +1,18 @@
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
 
+#include "threads/fixedpoint.h"
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-#include "synch.h"
+#ifdef USERPROG
+#include "filesys/file.h"
+#include "filesys/filesys.h"
+#include "userprog/syscall.h"
+#include "lib/kernel/hash.h"
+#endif
 
-extern struct supplemental_page_table *spt;
 /* States in a thread's life cycle. */
-
-struct signal{
-	int signum;
-	void (*sig_handler)(void);
-};
 enum thread_status
   {
     THREAD_RUNNING,     /* Running thread. */
@@ -31,16 +31,64 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
-/* A kernel thread or user process.
-   ... */
-struct child_status {
-    tid_t child_id;                     /* Child thread id. */
-    int child_exit_status;              /* Child exit status. */
-    bool is_exit_called;                /* Has exit() been called? */
-    struct list_elem elem;              /* List element for child_status list. */
-};   
-   
+#define NICE_DEFAULT 0
 
+/* A kernel thread or user process.
+
+   Each thread structure is stored in its own 4 kB page.  The
+   thread structure itself sits at the very bottom of the page
+   (at offset 0).  The rest of the page is reserved for the
+   thread's kernel stack, which grows downward from the top of
+   the page (at offset 4 kB).  Here's an illustration:
+
+        4 kB +---------------------------------+
+             |          kernel stack           |
+             |                |                |
+             |                |                |
+             |                V                |
+             |         grows downward          |
+             |                                 |
+             |                                 |
+             |                                 |
+             |                                 |
+             |                                 |
+             |                                 |
+             |                                 |
+             |                                 |
+             +---------------------------------+
+             |              magic              |
+             |                :                |
+             |                :                |
+             |               name              |
+             |              status             |
+        0 kB +---------------------------------+
+
+   The upshot of this is twofold:
+
+      1. First, `struct thread' must not be allowed to grow too
+         big.  If it does, then there will not be enough room for
+         the kernel stack.  Our base `struct thread' is only a
+         few bytes in size.  It probably should stay well under 1
+         kB.
+
+      2. Second, kernel stacks must not be allowed to grow too
+         large.  If a stack overflows, it will corrupt the thread
+         state.  Thus, kernel functions should not allocate large
+         structures or arrays as non-static local variables.  Use
+         dynamic allocation with malloc() or palloc_get_page()
+         instead.
+
+   The first symptom of either of these problems will probably be
+   an assertion failure in thread_current(), which checks that
+   the `magic' member of the running thread's `struct thread' is
+   set to THREAD_MAGIC.  Stack overflow will normally change this
+   value, triggering the assertion. */
+/* The `elem' member has a dual purpose.  It can be an element in
+   the run queue (thread.c), or it can be an element in a
+   semaphore wait list (synch.c).  It can be used these two ways
+   only because they are mutually exclusive: only a thread in the
+   ready state is on the run queue, whereas only a thread in the
+   blocked state is on a semaphore wait list. */
 struct thread
   {
     /* Owned by thread.c. */
@@ -49,18 +97,28 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
+    int base_priority;                  /* Default priority*/
+    struct lock* waiting_on;            /* Lock that thread is waiting for */
+    struct list acquired_locks;         /* Locks currently acquired */
     struct list_elem allelem;           /* List element for all threads list. */
-    struct supplemental_page_table *spt;
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-    
+
+    int nice;
+    fixed_point_t recent_cpu;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
-    int parent_id;                      /* Parent thread id. */
-    struct list children;               /* List of child threads. */
-    struct lock lock_child;             /* Lock for children list. */
+    int next_fd;                        /* The next fd that can be opened */
+    struct file *references[MAX_FILES_OPENED];
+    /* references is a lost of all the files opened by the current process*/
+    struct file *source;                /* File containing the executable */
+    struct list children;               /* List of child_info of each child. */
+    struct child_info* exit_info;       /* Pointer to the parent's child_info
+                                           for this thread. */
+    struct hash sup_table;              /* Supplementary page table */
 #endif
 
     /* Owned by thread.c. */
@@ -74,6 +132,7 @@ extern bool thread_mlfqs;
 
 void thread_init (void);
 void thread_start (void);
+
 void thread_tick (void);
 void thread_print_stats (void);
 
@@ -90,6 +149,7 @@ const char *thread_name (void);
 void thread_exit (void) NO_RETURN;
 void thread_yield (void);
 
+/* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
@@ -101,5 +161,13 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-#endif /* threads/thread.h */
+void thread_update_load_avg (void);
+void thread_update_recent_cpu (struct thread* t, void* aux UNUSED);
+void bsd_recalculate (void);
 
+bool thread_priority_less_func (
+  const struct list_elem *a, const struct list_elem *b, void *aux);
+
+extern bool yield_on_intr_enable;
+
+#endif /* threads/thread.h */
